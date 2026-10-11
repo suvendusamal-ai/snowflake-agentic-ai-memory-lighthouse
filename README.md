@@ -34,3 +34,28 @@ P0: COMPLETE - Foundation validated
 ## Security
 Only synthetic data is permitted.
 Credentials and private keys must never be committed.
+
+
+## P1 - Stateless Cortex Agent
+
+Status: FUNCTIONALLY VALIDATED
+
+The P1 implementation establishes a Snowflake Cortex Agent
+using Cortex Analyst and a governed four-entity semantic view.
+
+Validated capabilities:
+
+- Order and shipment investigation
+- Grounded responses
+- Unknown-order abstention
+- Independent-request statelessness
+
+Persistent agent memory is intentionally excluded from P1.
+
+Documentation:
+[Implementation Report](docs/P1_STATELESS_AGENT_REPORT.md)
+
+Evidence:
+[Evidence Manifest](evidence/p1_stateless_agent/P1_EVIDENCE_MANIFEST.md)
+
+Next milestone: P2 - Conversation State.
