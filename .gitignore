@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Credentials
+*.pem
+*.p8
+*.key
+.secrets/
+credentials.json
+config.toml
+
+# Evidence outputs
+evidence/**/*.txt
+evidence/**/*.json
+evidence/**/*.csv
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp

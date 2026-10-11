@@ -1,0 +1,57 @@
+-- ============================================================
+-- P0-D4: Agent Memory Evaluation Framework
+-- ============================================================
+
+USE ROLE ECOM_AGENT_MEMORY_OWNER;
+USE SECONDARY ROLES NONE;
+USE WAREHOUSE ECOM_AGENT_MEMORY_WH;
+USE DATABASE ECOM_AGENT_MEMORY_DB;
+USE SCHEMA EVALUATION;
+
+-- 1. Evaluation test case catalog
+CREATE TABLE IF NOT EXISTS TEST_CASES (
+    TEST_CASE_ID          VARCHAR(64) NOT NULL,
+    TEST_NAME             VARCHAR(200) NOT NULL,
+    TEST_CATEGORY         VARCHAR(100) NOT NULL,
+    TEST_DESCRIPTION      VARCHAR(2000),
+    CUSTOMER_ID           VARCHAR(30),
+    INPUT_PAYLOAD         VARIANT,
+    EXPECTED_BEHAVIOR     VARCHAR(4000),
+    EXPECTED_OUTPUT       VARIANT,
+    EVALUATION_CRITERIA   VARIANT,
+    TEST_PRIORITY         VARCHAR(20) DEFAULT 'MEDIUM',
+    TEST_STATUS           VARCHAR(30) DEFAULT 'ACTIVE',
+    CREATED_AT            TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    UPDATED_AT            TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+
+    CONSTRAINT PK_EVALUATION_TEST_CASES
+        PRIMARY KEY (TEST_CASE_ID)
+)
+COMMENT = 'Catalog of reproducible agent memory evaluation scenarios';
+
+-- 2. Evaluation execution results
+CREATE TABLE IF NOT EXISTS TEST_RESULTS (
+    TEST_RESULT_ID        VARCHAR(64) NOT NULL,
+    TEST_CASE_ID          VARCHAR(64) NOT NULL,
+    EVALUATION_RUN_ID     VARCHAR(64) NOT NULL,
+    AGENT_ID              VARCHAR(100),
+    EXECUTION_TIMESTAMP   TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    ACTUAL_OUTPUT         VARIANT,
+    EXPECTED_MATCH        BOOLEAN,
+    EVALUATION_SCORE      FLOAT,
+    EVALUATION_STATUS     VARCHAR(20) NOT NULL,
+    FAILURE_REASON        VARCHAR(2000),
+    EXECUTION_METADATA    VARIANT,
+    EVIDENCE_REFERENCE    VARCHAR(500),
+
+    CONSTRAINT PK_EVALUATION_TEST_RESULTS
+        PRIMARY KEY (TEST_RESULT_ID),
+
+    CONSTRAINT FK_EVALUATION_TEST_CASE
+        FOREIGN KEY (TEST_CASE_ID)
+        REFERENCES TEST_CASES(TEST_CASE_ID)
+)
+COMMENT = 'Evidence-backed evaluation results across agent runs';
+
+-- No test cases or results are inserted in P0-D4.
+-- Deterministic scenarios will be registered in later stages.

@@ -1,0 +1,82 @@
+-- ============================================================
+-- P0-E3: Deterministic Synthetic Shipments
+-- Target: 500 shipment/fulfillment records
+-- ============================================================
+
+USE ROLE ECOM_AGENT_MEMORY_OWNER;
+USE SECONDARY ROLES NONE;
+USE WAREHOUSE ECOM_AGENT_MEMORY_WH;
+USE DATABASE ECOM_AGENT_MEMORY_DB;
+USE SCHEMA RAW;
+
+INSERT INTO RAW.SHIPMENTS (
+    SHIPMENT_ID,
+    ORDER_ID,
+    CARRIER_NAME,
+    TRACKING_NUMBER,
+    SHIPMENT_STATUS,
+    DISPATCH_DATE,
+    EXPECTED_DELIVERY_DATE,
+    REVISED_DELIVERY_DATE,
+    DELAY_REASON,
+    LAST_UPDATED_AT,
+    CREATED_AT
+)
+SELECT
+    'SHP_' || TO_VARCHAR(O.ORDER_ID),
+    O.ORDER_ID,
+
+    CASE
+        WHEN O.ORDER_ID = 7821 THEN 'BlueDart'
+        WHEN MOD(O.ORDER_ID, 3) = 0 THEN 'Delhivery'
+        WHEN MOD(O.ORDER_ID, 3) = 1 THEN 'BlueDart'
+        ELSE 'DTDC'
+    END,
+
+    'TRK' || LPAD(TO_VARCHAR(O.ORDER_ID), 10, '0'),
+
+    CASE
+        WHEN O.ORDER_ID = 7821 THEN 'IN_TRANSIT'
+        WHEN O.ORDER_STATUS = 'CANCELLED' THEN 'NOT_DISPATCHED'
+        WHEN O.ORDER_STATUS = 'LOST' THEN 'LOST'
+        WHEN O.ORDER_STATUS = 'DELAYED' THEN 'DELAYED'
+        WHEN O.ORDER_STATUS = 'DELIVERED' THEN 'DELIVERED'
+        ELSE 'IN_TRANSIT'
+    END,
+
+    CASE
+        WHEN O.ORDER_STATUS = 'CANCELLED' THEN NULL
+        ELSE DATEADD('day', 1, O.ORDER_DATE)
+    END,
+
+    O.PROMISED_DELIVERY_DATE,
+
+    CASE
+        WHEN O.ORDER_ID = 7821
+            THEN '2026-10-12'::DATE
+        WHEN O.ORDER_STATUS = 'DELAYED'
+            THEN DATEADD('day', 3, O.PROMISED_DELIVERY_DATE)
+        ELSE NULL
+    END,
+
+    CASE
+        WHEN O.ORDER_ID = 7821 THEN 'WEATHER_DELAY'
+        WHEN O.ORDER_STATUS = 'DELAYED'
+            THEN CASE MOD(O.ORDER_ID, 3)
+                WHEN 0 THEN 'WEATHER_DELAY'
+                WHEN 1 THEN 'LOGISTICS_BACKLOG'
+                ELSE 'SORTING_DELAY'
+            END
+        WHEN O.ORDER_STATUS = 'LOST' THEN 'PACKAGE_LOST'
+        ELSE NULL
+    END,
+
+    '2026-10-10 12:00:00'::TIMESTAMP_NTZ,
+    O.ORDER_DATE
+
+FROM RAW.ORDERS O
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM RAW.SHIPMENTS S
+    WHERE S.ORDER_ID = O.ORDER_ID
+);
