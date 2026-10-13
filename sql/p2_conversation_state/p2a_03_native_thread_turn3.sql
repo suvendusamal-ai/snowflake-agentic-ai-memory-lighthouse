@@ -1,0 +1,44 @@
+USE ROLE ECOM_AGENT_MEMORY_OWNER;
+USE WAREHOUSE ECOM_AGENT_MEMORY_WH;
+
+SELECT
+    R:status::VARCHAR AS STATUS,
+    R:metadata:thread_id::NUMBER AS THREAD_ID,
+    R:metadata:assistant_message_id::NUMBER AS ASSISTANT_MESSAGE_ID,
+    R:metadata:user_message_id::NUMBER AS USER_MESSAGE_ID,
+    (
+        SELECT LISTAGG(F.VALUE:text::VARCHAR, ' ')
+            WITHIN GROUP (ORDER BY F.INDEX)
+        FROM TABLE(FLATTEN(INPUT => R:content)) F
+        WHERE F.VALUE:type::VARCHAR = 'text'
+    ) AS ASSISTANT_ANSWER,
+    (
+        SELECT COUNT(*)
+        FROM TABLE(FLATTEN(INPUT => R:content)) F
+        WHERE F.VALUE:type::VARCHAR = 'tool_result'
+    ) AS TOOL_RESULT_COUNT
+FROM (
+    SELECT TRY_PARSE_JSON(
+        SNOWFLAKE.CORTEX.DATA_AGENT_RUN(
+            'ECOM_AGENT_MEMORY_DB.AGENTS.ECOM_STATELESS_AGENT',
+            $$
+            {
+              "thread_id": 89390720,
+              "parent_message_id": 22884005897,
+              "messages": [
+                {
+                  "role": "user",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "What is its revised delivery date? Verify against shipment records."
+                    }
+                  ]
+                }
+              ]
+            }
+            $$,
+            FALSE
+        )
+    ) AS R
+);
