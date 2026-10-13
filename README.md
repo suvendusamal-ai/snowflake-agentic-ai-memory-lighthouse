@@ -59,3 +59,62 @@ Evidence:
 [Evidence Manifest](evidence/p1_stateless_agent/P1_EVIDENCE_MANIFEST.md)
 
 Next milestone: P2 - Conversation State.
+
+## M1 - Stateless Cortex Agent with Streamlit
+
+### Business Scenario
+An ecommerce customer asks about an order and then asks
+follow-up questions. M1 demonstrates that a stateless agent
+cannot automatically resolve references to earlier messages.
+
+### Architecture
+Streamlit Chat UI
+  -> Python Agent Client
+  -> Snowflake Cortex Agent
+  -> Cortex Analyst
+  -> Semantic View
+  -> Ecommerce Data
+
+### Snowflake Components
+- Agent: ECOM_AGENT_MEMORY_DB.AGENTS.ECOM_STATELESS_AGENT
+- Tool: EcomOrderAnalyst
+- Semantic View: ECOM_STATELESS_FULL_SEMANTIC_VIEW
+- Warehouse: ECOM_AGENT_MEMORY_WH
+
+### Run Locally
+Prerequisites: Python, Snowflake Connector, Streamlit,
+and a configured Snowflake connection named CoCo_Oct.
+
+From the repository root:
+
+    python -m streamlit run .\streamlit\app.py
+
+### Stateless Memory Demonstration
+
+| Test | Question | Observed Behavior | Result |
+|---|---|---|---|
+| T1 | Where is order 7821? | Grounded shipment response | PASS |
+| T2 | Who is delivering it? | Requested order clarification | PASS |
+| T3 | Who is delivering order 7821? | Identified BlueDart | PASS |
+| T4 | New conversation: What is its ETA? | No inherited order context | PASS |
+
+### Memory Mechanism
+- Streamlit retains chat history for display.
+- Each Cortex Agent request contains only the current question.
+- Previous conversation messages are not transmitted.
+- No conversation thread identifier is supplied.
+- No persistent agent memory is retrieved.
+
+### Architectural Takeaway
+Chat history displayed in a user interface is not equivalent
+to agent memory. Stateless behavior is controlled by the
+application's request construction.
+
+### Evidence
+See evidence/m1_stateless/ for demonstration screenshots.
+
+### Limitations
+- No conversational continuity.
+- Ambiguous follow-up questions require clarification.
+- No persistent session, episodic, or semantic memory.
+- Demonstration uses synthetic ecommerce data.
