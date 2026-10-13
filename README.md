@@ -118,3 +118,88 @@ See evidence/m1_stateless/ for demonstration screenshots.
 - Ambiguous follow-up questions require clarification.
 - No persistent session, episodic, or semantic memory.
 - Demonstration uses synthetic ecommerce data.
+
+## M2 - Conversation Memory with Streamlit
+
+Status: FUNCTIONALLY VALIDATED - 6/6 scenarios PASS
+
+### Business Scenario
+An ecommerce customer asks about order 7821 and continues
+with follow-up questions without repeating the order number.
+
+Unlike M1, M2 supplies previous conversation turns to the
+same Snowflake Cortex Agent.
+
+### Architecture
+Streamlit Chat UI
+  -> Application Conversation State
+  -> Shared Python Agent Client
+  -> Snowflake Cortex Agent
+  -> Cortex Analyst
+  -> Semantic View
+  -> Ecommerce Data
+
+### Implementation
+- Shared Cortex Agent: ECOM_STATELESS_AGENT
+- Agent invocation: SNOWFLAKE.CORTEX.DATA_AGENT_RUN
+- Memory module: streamlit/memory/conversation.py
+- Streamlit application: streamlit/app.py
+- Memory storage: Streamlit session state
+- Memory mechanism: Explicit multi-turn message history
+- Conversation identifier: Application-generated UUID
+- M1 and M2 maintain separate conversation histories
+
+### Interactive Demonstration
+
+Run from the repository root:
+
+    python -m streamlit run .\streamlit\app.py
+
+Select M1 - Stateless or M2 - Conversation Memory.
+
+### Functional Validation
+
+| Test | Scenario | Observed Result |
+|---|---|---|
+| M2-T1 | Where is order 7821? | Grounded shipment response - PASS |
+| M2-T2 | Who is delivering it? | BlueDart - PASS |
+| M2-T3 | What caused the delay? | Weather delay - PASS |
+| M2-T4 | What is its revised ETA? | Recorded ETA 2026-10-12 - PASS |
+| M2-T5 | New conversation isolation | No previous order context - PASS |
+| M2-T6 | M1/M2 mode isolation | Independent histories preserved - PASS |
+
+The recorded revised ETA is historical shipment data,
+not a prediction of future delivery.
+
+### M1 vs M2
+
+| Capability | M1 | M2 |
+|---|---|---|
+| Chat history displayed | Yes | Yes |
+| Previous messages sent to Agent | No | Yes |
+| Follow-up reference resolution | No | Yes |
+| Application conversation ID | No | Yes |
+| Persistent memory in Snowflake | No | No |
+| New conversation isolation | Yes | Yes |
+
+### Evidence
+- [Four-turn conversation](evidence/m2_conversation/M2_T1_T4_conversation.png)
+- [New conversation isolation](evidence/m2_conversation/M2_T5_new_conversation.png)
+- [M1 stateless comparison](evidence/m2_conversation/M2_T6_m1_stateless.png)
+- [Mode isolation](evidence/m2_conversation/M2_T6_mode_isolation.png)
+
+### Architectural Takeaway
+M2 demonstrates application-managed conversation memory.
+
+The Cortex Agent does not independently remember previous
+invocations. Streamlit retains previous user and assistant
+messages and supplies them to the Agent on subsequent calls.
+
+### Limitations
+- Memory is scoped to the active Streamlit session.
+- Browser refresh or application restart may lose state.
+- Conversation IDs do not represent Snowflake-native threads.
+- No durable conversation persistence or cross-session recovery.
+- No context summarization or token-budget enforcement yet.
+- No authenticated multi-user isolation has been demonstrated.
+- Synthetic ecommerce data only.

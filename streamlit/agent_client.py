@@ -4,15 +4,16 @@ import snowflake.connector
 AGENT = "ECOM_AGENT_MEMORY_DB.AGENTS.ECOM_STATELESS_AGENT"
 
 
-def ask_agent(question):
-    payload = {
-        "messages": [
+def ask_agent(question, messages=None):
+    if messages is None:
+        messages = [
             {
                 "role": "user",
                 "content": [{"type": "text", "text": question}]
             }
         ]
-    }
+
+    payload = {"messages": messages}
 
     conn = snowflake.connector.connect(
         connection_name="CoCo_Oct",
