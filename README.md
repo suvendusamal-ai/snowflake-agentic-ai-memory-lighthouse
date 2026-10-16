@@ -203,3 +203,29 @@ messages and supplies them to the Agent on subsequent calls.
 - No context summarization or token-budget enforcement yet.
 - No authenticated multi-user isolation has been demonstrated.
 - Synthetic ecommerce data only.
+
+---
+
+## One Cortex Agent, five governed memory patterns
+
+This lighthouse demonstrates five **application-managed** memory patterns around a shared Snowflake Cortex Agent: **M1 Stateless**, **M2 Conversation**, **M3 Episodic**, **M4 Semantic**, and **M5 Procedural**. It uses synthetic e-commerce data and a unified Streamlit interface.
+
+![L0 business architecture](architecture/L0_linkedin_reference.png)
+
+| Pattern | What it adds | Backing store |
+|---|---|---|
+| M1 | Grounded order answers without chat history | None |
+| M2 | In-session follow-up continuity | Streamlit session state |
+| M3 | Approved, customer/order-scoped historical recall | Snowflake episodic memory table |
+| M4 | Approved, versioned, revocable preferences | Snowflake semantic memory table |
+| M5 | Approved, effective investigation playbooks | Snowflake procedure registry |
+
+**Start here:** [Memory patterns and reproducible examples](docs/MEMORY_PATTERNS.md) · [L1 technical architecture](architecture/L1_technical_reference.png)
+
+**Run (after completing existing Snowflake setup and dependency prerequisites):**
+
+```powershell
+python -m streamlit run .\streamlit\app.py
+```
+
+**Scope:** Snowflake-native Cortex Agent/Analyst, semantic view, SQL and tables; application-managed retrieval, context assembly and M5 policy evaluation. Demo customer IDs are not authenticated identities. See the limitations in the memory patterns guide. This publication section complements, rather than replaces, the existing M1/M2 README documentation.
