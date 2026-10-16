@@ -1,0 +1,99 @@
+-- M5-E.03: Register synthetic v2 as DRAFT.
+-- Preserve approved v1 and all existing operational restrictions.
+
+USE ROLE ECOM_AGENT_MEMORY_OWNER;
+USE SECONDARY ROLES NONE;
+USE WAREHOUSE ECOM_AGENT_MEMORY_WH;
+USE DATABASE ECOM_AGENT_MEMORY_DB;
+USE SCHEMA PROCEDURES;
+
+BEGIN TRANSACTION;
+
+INSERT INTO PROCEDURE_VERSIONS (
+    PROCEDURE_VERSION_ID,
+    PROCEDURE_ID,
+    VERSION_NUMBER,
+    PROCEDURE_STEPS,
+    GUARDRAILS,
+    INPUT_CONTRACT,
+    OUTPUT_CONTRACT,
+    APPROVAL_STATUS,
+    APPROVED_BY,
+    APPROVED_AT,
+    EFFECTIVE_FROM,
+    EFFECTIVE_TO
+)
+WITH UPDATED_STEPS AS (
+    SELECT
+        BASE.PROCEDURE_ID,
+        ARRAY_AGG(
+            IFF(
+                F.VALUE:step_id::VARCHAR = 'S4',
+                OBJECT_INSERT(
+                    F.VALUE,
+                    'action',
+                    'Recommend carrier investigation only when revised ETA is missed AND tracking inactivity is at least 24 hours; otherwise report insufficient evidence or no escalation',
+                    TRUE
+                ),
+                F.VALUE
+            )
+        ) WITHIN GROUP (ORDER BY F.INDEX) AS PROCEDURE_STEPS
+    FROM PROCEDURE_VERSIONS BASE,
+         LATERAL FLATTEN(INPUT => BASE.PROCEDURE_STEPS) F
+    WHERE BASE.PROCEDURE_ID = 'ECOM-DELAY-INVESTIGATION'
+      AND BASE.VERSION_NUMBER = 1
+      AND BASE.APPROVAL_STATUS = 'APPROVED'
+    GROUP BY BASE.PROCEDURE_ID
+)
+SELECT
+    'ECOM-DELAY-INVESTIGATION-V2',
+    V.PROCEDURE_ID,
+    2,
+    U.PROCEDURE_STEPS,
+    OBJECT_INSERT(
+        OBJECT_INSERT(
+            V.GUARDRAILS,
+            'tracking_inactivity_hours',
+            24,
+            TRUE
+        ),
+        'escalation_requires',
+        PARSE_JSON(
+            '["REVISED_ETA_MISSED","TRACKING_INACTIVE_24_HOURS"]'
+        ),
+        TRUE
+    ),
+    V.INPUT_CONTRACT,
+    V.OUTPUT_CONTRACT,
+    'DRAFT',
+    NULL,
+    NULL,
+    NULL,
+    NULL
+FROM PROCEDURE_VERSIONS V
+JOIN UPDATED_STEPS U
+    ON U.PROCEDURE_ID = V.PROCEDURE_ID
+WHERE V.PROCEDURE_ID = 'ECOM-DELAY-INVESTIGATION'
+  AND V.VERSION_NUMBER = 1
+  AND V.APPROVAL_STATUS = 'APPROVED'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM PROCEDURE_VERSIONS EXISTING
+      WHERE EXISTING.PROCEDURE_ID = V.PROCEDURE_ID
+        AND EXISTING.VERSION_NUMBER = 2
+  );
+
+COMMIT;
+
+SELECT
+    PROCEDURE_VERSION_ID,
+    VERSION_NUMBER,
+    APPROVAL_STATUS,
+    GUARDRAILS:tracking_inactivity_hours::NUMBER
+        AS INACTIVITY_HOURS,
+    ARRAY_SIZE(PROCEDURE_STEPS) AS STEP_COUNT,
+    APPROVED_BY,
+    EFFECTIVE_FROM
+FROM PROCEDURE_VERSIONS
+WHERE PROCEDURE_ID = 'ECOM-DELAY-INVESTIGATION'
+ORDER BY VERSION_NUMBER;

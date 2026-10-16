@@ -1,3 +1,4 @@
+import json
 import re
 from uuid import uuid4
 import streamlit as st
@@ -15,6 +16,8 @@ from memory.semantic import (
     update_semantic_preference,
     revoke_semantic_preference,
 )
+from memory.procedural import load_approved_procedure, evaluate_delayed_order
+
 from memory.conversation import (
     new_conversation,
     add_message,
@@ -29,7 +32,7 @@ st.set_page_config(
 
 st.title("Snowflake Agentic AI Memory Lighthouse")
 
-MODES = ["M1 — Stateless", "M2 — Conversation Memory", "M3 — Episodic Memory", "M4 — Semantic Memory"]
+MODES = ["M1 — Stateless", "M2 — Conversation Memory", "M3 — Episodic Memory", "M4 — Semantic Memory", "M5 - Procedural Memory"]
 
 if "memory_mode" not in st.session_state:
     st.session_state.memory_mode = MODES[0]
@@ -94,9 +97,12 @@ with st.sidebar:
     elif mode == MODES[2]:
         st.write("**Memory:** Persistent episodic memory")
         st.caption("Approved historical events are retrieved from Snowflake.")
-    else:
+    elif mode == MODES[3]:
         st.write("**Memory:** Durable semantic preferences")
         st.caption("Only active, approved customer preferences are retrieved.")
+    else:
+        st.write("**Memory:** Approved operational procedures")
+        st.caption("Active, approved playbooks are retrieved from Snowflake.")
 
     if st.button("New Conversation", use_container_width=True):
         new_chat = new_conversation()
@@ -268,7 +274,7 @@ if question:
                     )
                     messages_sent = len(agent_messages)
                     mechanism = "Persistent episodic memory"
-                else:
+                elif mode == MODES[3]:
                     semantic_memories = retrieve_semantic_preferences(customer_id)
                     if semantic_memories:
                         preference_lines = "\n".join(
@@ -290,6 +296,74 @@ if question:
                     response = ask_agent(question, messages=agent_messages)
                     messages_sent = len(agent_messages)
                     mechanism = "Persistent semantic memory (active preferences only)"
+                elif mode == MODES[4]:
+                    procedure = load_approved_procedure()
+
+                    steps_text = "\n".join(
+                        f"{step['step_id']}: {step['action']}"
+                        for step in procedure["steps"]
+                    )
+
+                    guardrails_text = json.dumps(
+                        procedure["guardrails"],
+                        ensure_ascii=True
+                    )
+
+                    context = (
+                        "Approved synthetic ecommerce investigation playbook.\n"
+                        f"Procedure: {procedure['procedure_id']}\n"
+                        f"Version: {procedure['version']}\n"
+                        f"Steps:\n{steps_text}\n"
+                        f"Guardrails: {guardrails_text}\n\n"
+                        "Use this playbook as business task guidance, "
+                        "not as authorization to perform operational actions. "
+                        "Investigate using available Snowflake tools. "
+                        "Do not claim a step was verified without supporting data. "
+                        "Do not issue refunds, reshipments, compensation, "
+                        "or delivery promises. "
+                        "Report verified facts, missing evidence, "
+                        "escalation eligibility, next action and procedure version."
+                    )
+
+                    agent_messages = [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": (
+                                        context
+                                        + "\n\nInvestigation request: "
+                                        + question
+                                    )
+                                }
+                            ]
+                        }
+                    ]
+
+                    order_match = re.search(
+                        r"\border\s*#?\s*(\d+)\b",
+                        question,
+                        flags=re.IGNORECASE,
+                    )
+
+                    if not order_match:
+                        raise ValueError(
+                            "M5 requires an explicit order ID, for example: order 7821"
+                        )
+
+                    policy_result = evaluate_delayed_order(
+                        order_match.group(1),
+                        procedure
+                    )
+
+                    response = ask_agent(
+                        question,
+                        messages=agent_messages
+                    )
+
+                    messages_sent = len(agent_messages)
+                    mechanism = "Approved Snowflake procedural memory"
 
                 answer_parts = [
                     item["text"]
@@ -304,6 +378,34 @@ if question:
                     answer = "Agent returned no text response."
 
                 st.markdown(answer)
+
+                if mode == MODES[4]:
+                    st.divider()
+                    st.subheader("Independent Policy Verification")
+                    st.caption(
+                        "Calculated by application-side SQL using the "
+                        "approved Snowflake playbook, not by the Cortex Agent."
+                    )
+
+                    st.write(
+                        f"**Procedure:** {policy_result['procedure_id']} "
+                        f"(v{policy_result['procedure_version']})"
+                    )
+
+                    st.write(
+                        f"**Escalation decision:** {policy_result['decision']}"
+                    )
+
+                    st.write(f"**Reason:** {policy_result['reason']}")
+
+                    st.write(
+                        f"**Tracking inactivity:** "
+                        f"{policy_result.get('inactive_hours')} hours "
+                        f"(threshold: {policy_result.get('threshold_hours')} hours)"
+                    )
+
+                    with st.expander("Verified Policy Evidence"):
+                        st.json(policy_result)
 
                 add_message(conversation, "user", question)
                 add_message(conversation, "assistant", answer)
@@ -335,6 +437,18 @@ if question:
                     ),
                     "semantic_preference_keys": (
                         [m["preference_key"] for m in semantic_memories] if mode == MODES[3] else []
+                    ),
+                    "procedure_id": (
+                        procedure["procedure_id"] if mode == MODES[4] else None
+                    ),
+                    "procedure_version": (
+                        procedure["version"] if mode == MODES[4] else None
+                    ),
+                    "policy_decision": (
+                        policy_result["decision"] if mode == MODES[4] else None
+                    ),
+                    "policy_evidence": (
+                        policy_result if mode == MODES[4] else None
                     ),
                     "agent": AGENT,
                     "tools": tools,
