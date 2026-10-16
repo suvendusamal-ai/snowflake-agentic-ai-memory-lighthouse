@@ -210,7 +210,7 @@ messages and supplies them to the Agent on subsequent calls.
 
 This lighthouse demonstrates five **application-managed** memory patterns around a shared Snowflake Cortex Agent: **M1 Stateless**, **M2 Conversation**, **M3 Episodic**, **M4 Semantic**, and **M5 Procedural**. It uses synthetic e-commerce data and a unified Streamlit interface.
 
-![L0 business architecture](architecture/L0_linkedin_reference.png)
+![L0 business architecture](docs/architecture/L0_reference_architecture.png)
 
 | Pattern | What it adds | Backing store |
 |---|---|---|
@@ -220,7 +220,7 @@ This lighthouse demonstrates five **application-managed** memory patterns around
 | M4 | Approved, versioned, revocable preferences | Snowflake semantic memory table |
 | M5 | Approved, effective investigation playbooks | Snowflake procedure registry |
 
-**Start here:** [Memory patterns and reproducible examples](docs/MEMORY_PATTERNS.md) · [L1 technical architecture](architecture/L1_technical_reference.png)
+**Start here:** [Memory patterns and reproducible examples](docs/MEMORY_PATTERNS.md) · [L1 technical architecture](docs/architecture/L1_technical_architecture.png)
 
 **Run (after completing existing Snowflake setup and dependency prerequisites):**
 
