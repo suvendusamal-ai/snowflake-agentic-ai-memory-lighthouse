@@ -6,8 +6,8 @@
 - [x] Existing M4 evidence document reviewed (save, recall, versioned update, revocation, customer filtering).
 - [x] L0 and L1 diagrams generated with logical **Shared Cortex Agent** label.
 - [x] M5 independent SQL evaluator shown as a separate application path.
-- [ ] M5 screenshots/SQL results **not supplied in this review**; locate and attach a concise evidence index before claiming end-to-end M5 validation in the public README.
-- [ ] Verify active procedure version and threshold in live Snowflake before recording a current-state screenshot.
+- [x] M5 runtime screenshots and procedure-version SQL evidence captured.
+- [x] Verified approved v1 (48 hours) and draft v2 (24 hours) in Snowflake.
 - [ ] Re-run a brief smoke test **only if desired**; prior M1–M4 evidence exists and should be reused.
 
 ## Local integration (no automatic edits performed)
@@ -39,3 +39,17 @@ git diff --cached --stat
 ```
 
 **Important:** No live Snowflake execution, Git commit, remote push, or LinkedIn publication was performed in producing this package.
+
+## M5 verified evidence
+
+### T1 — Approved playbook and Cortex Agent
+
+![M5 approved playbook and agent](../evidence/m5_procedural/T1_approved_playbook_agent.png)
+
+### T2 — Independent policy verification
+
+![M5 independent policy verification](../evidence/m5_procedural/T2_independent_policy_verification.png)
+
+### T3 — Procedure version governance
+
+![M5 procedure version governance](../evidence/m5_procedural/T3_procedure_version_governance.png)

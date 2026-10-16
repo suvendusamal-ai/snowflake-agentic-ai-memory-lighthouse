@@ -17,6 +17,8 @@
 - **M4** recalls **the currently approved structured fact** across conversations, e.g. `NOTIFICATION_CHANNEL=SMS (v2)` after superseding EMAIL (v1). Revocation excludes the fact from future retrieval.
 - **M5** retrieves **how to investigate**. It is an approved business playbook, not a learned agent skill or permission to issue refunds.
 
+![L1 technical architecture](../architecture/L1_technical_reference.png)
+
 ## Runtime sequence
 
 1. User selects M1–M5 in `streamlit/app.py`.
@@ -52,4 +54,4 @@
 | M4 | Save EMAIL, update to SMS, then revoke, starting a new conversation between steps | Active v1 → active v2 → no active preference |
 | M5 | `Investigate delayed order 7821 and assess escalation` | Approved playbook + separate SQL eligibility result |
 
-See `architecture/L0_linkedin_reference.png` and `architecture/L1_technical_reference.png`.
+See the [L0 business architecture](../architecture/L0_linkedin_reference.png) and [L1 technical architecture](../architecture/L1_technical_reference.png).
